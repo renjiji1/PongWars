@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title></title>
+		<meta charset="utf-8">
+	</head>
+	<body style="margin-top: 0; margin-left: 0">
+		<canvas id="tenis" ></canvas>
+		<script>
+			let canavs, canvascontext;
+			let ballX = 75;
+			let ballY = 75;
+			let FramesPerSecond = 30;
+			let ballSpeedX = 10;
+			let ballSpeedY = 10;
+
+			let paddle1Y = 250;
+			let paddle2Y = 250;
+			const PADDLE_HEIGHT = 100;
+			const PADDLE_WIDTH = 10;
+			const PADDLE_SPEED = 50; 
+			const WINNING_SCORE = 3;
+
+			let playerScore = 0;
+			let computerScore = 0;
+
+			let showingWinScreen = false;
+
+			//tells where your mouse is
+			function calculateMousePos(evt) {
+				let rect = canvas.getBoundingClientRect();
+				let root = document.documentElement;
+
+				let mouseX = evt.clientX - rect.left - root.scrollLeft;
+				let mouseY = evt.clientY - rect.top - root.scrollTop;
+				return {
+					x: mouseX,
+					y: mouseY
+				}
+			}
+
+			//if you win the score reset to 0
+			function mouseClick(evt) {
+				if(showingWinScreen == true) {
+					playerScore = 0;
+					computerScore = 0;
+					showingWinScreen = false;
+					ballSpeedY = 10; 
+				}
+			}
+
+			window.onload = function() {
+				canvas = document.getElementById("tenis")
+                canvas.width = window.innerWidth - window.innerWidth*.01;
+                canvas.height = window.innerHeight - window.innerHeight*.00001; 
+				canvascontext = canvas.getContext("2d");
+
+				//makes your paddle move along with your mouse
+				canvas.addEventListener('mousemove', function(evt) {
+					let mousePos = calculateMousePos(evt);
+					paddle1Y = mousePos.y - (PADDLE_HEIGHT/2);
+				});
+
+				canvas.addEventListener("mousedown", mouseClick)
+
+			
+				setInterval(function() {
+					draweverything(); 
+					moveEverything();
+				}, 1000 / FramesPerSecond);
+			}
+
+			//it determines the position of every moving thing on the screen
+			function moveEverything() {
+				if(showingWinScreen == true) {
+					return;
+				}
+				//if it shows the win or lose screen the program pauses
+				computerMovePaddle2Y();
+				if(ballX > canvas.width) {		
+					if(ballY > paddle2Y && ballY < paddle2Y + PADDLE_HEIGHT) {
+						ballSpeedX *= -1;
+					    let paddleCenter = paddle2Y + PADDLE_HEIGHT / 2;
+						let ballDistanceY = ballY - paddleCenter;
+						ballSpeedY = ballDistanceY/2;	
+					}
+					//makes the enemy paddle bounce the ball
+					else {
+						ballReset();
+						playerScore++;
+						if(playerScore >= WINNING_SCORE) {
+							showingWinScreen = true;
+						}
+					}
+				}
+				//makes the player's score go up 
+				else if(ballX <= 0) {
+					if(ballY > paddle1Y && ballY < paddle1Y + PADDLE_HEIGHT) {
+						let paddleCenter = paddle1Y + PADDLE_HEIGHT / 2;
+						let ballDistanceY = ballY - paddleCenter;
+						ballSpeedY = ballDistanceY;
+						ballSpeedX *= -1;
+					}
+					//makes your paddle bounce the ball
+					else {
+						ballReset();
+						computerScore++;
+						if(computerScore >= WINNING_SCORE) {
+							showingWinScreen = true;
+						}	
+					}			
+				}
+				//makes the computer score go up
+				
+				if(ballY > canvas.height) {
+					ballSpeedY *= -1;
+				}
+				else if(ballY < 0) {
+					ballSpeedY *= -1;
+				}
+				ballY += ballSpeedY*2;
+				ballX += ballSpeedX*3;
+			}
+			//makes it so that when the ball bounces off the paddle the speed is affected
+
+			//creates the ai
+			function computerMovePaddle2Y() {
+				 let paddleCenter = paddle2Y + PADDLE_HEIGHT / 2;
+				 if(ballY > paddleCenter + 35) {
+					paddle2Y += PADDLE_SPEED;
+				 } 	
+				 if(ballY < paddleCenter - 35) {
+				 	paddle2Y -= PADDLE_SPEED;
+				 }		
+			}
+
+			//makes the ball reset after each game
+			function ballReset() {
+				ballX = canvas.width / 2;
+				ballY = canvas.height / 2;
+				ballSpeedY *= -1;
+				ballSpeedX *= -1;
+			}
+
+			//draws a rectangle
+			function colorRect(left, up, width ,height, color) {
+				canvascontext.fillStyle = color;
+				canvascontext.fillRect(left, up, width, height);
+			}
+
+			//draws a circle
+			function colorCircle(centerX, centerY, radius, color) {
+				canvascontext.fillStyle = color;
+				canvascontext.beginPath();
+				canvascontext.arc(centerX, centerY, radius, 0, Math.PI*2, true);
+				canvascontext.fill();
+			}
+
+			//colors everything and does the win screen
+			function draweverything() {
+				colorRect(0, 0, canvas.width, canvas.height, "black");
+				// colors the playing area/canvas black 
+
+				if(showingWinScreen == true) {
+					canvascontext.fillStyle = "red";
+					canvascontext.font = "50px serif";
+					canvascontext.textAlign = "center";
+					if(playerScore == WINNING_SCORE) {
+						canvascontext.fillText("you win!!!", canvas.width/2, canvas.height/2)
+					}
+					else if(computerScore == WINNING_SCORE) {
+						canvascontext.fillText("you are die", canvas.width/2, canvas.height/2)
+					}
+					canvascontext.fillText("click to go back", canvas.width/2, canvas.height/2 + 80)
+					return;
+				}
+				//does the win scren
+
+				colorCircle(ballX, ballY, 10, "red");
+				//colors the ball red
+				
+				colorRect(0, paddle1Y, PADDLE_WIDTH, PADDLE_HEIGHT, "blue")
+				colorRect(canvas.width - PADDLE_WIDTH, paddle2Y, PADDLE_WIDTH, PADDLE_HEIGHT, "blue")
+				//colors the paddles blue
+
+				canvascontext.font = "50px serif"
+				canvascontext.fillStyle = "gray"
+				canvascontext.fillText(playerScore, 100, 100)
+				canvascontext.fillText(computerScore, canvas.width - 100, 100)
+				//does the score 
+			}
+
+		</script>
+	</body>
+</html>		
